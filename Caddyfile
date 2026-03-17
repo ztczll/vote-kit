@@ -1,0 +1,10 @@
+{
+    admin 0.0.0.0:2019
+    http_port 80
+    https_port -1
+    auto_https off
+}
+
+http://{$DOMAIN} {
+    reverse_proxy votekit-frontend:80
+}

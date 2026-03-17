@@ -1,0 +1,20 @@
+# Docker 部署相关
+data/
+logs/
+.env
+
+# 开发环境
+node_modules/
+dist/
+.DS_Store
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 临时文件
+*.tmp
+*.bak

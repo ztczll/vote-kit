@@ -1,0 +1,197 @@
+version: '3.2'
+
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"   # SMTP 端口
+      - "8025:8025"   # Web UI，浏览器打开 http://localhost:8025 就能看到收件箱
+  # MySQL 数据库
+  votekit-mysql:
+    image: mysql:8.0.33
+    container_name: votekit-mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=vote_kit_prod
+      - TZ=Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./logs/mysql:/var/log/mysql
+      - ./init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - votekit-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 共享 Redis 缓存 (Vote-Kit + Forge 共用)
+  votekit-redis:
+    image: redis:6.0.16
+    container_name: votekit-redis
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - votekit-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端 API
+  votekit-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: votekit-backend
+    restart: always
+    depends_on:
+      - votekit-mysql
+      - votekit-redis
+      - mailpit
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # 原型与截图使用挂载卷路径，保证容器重建后不丢失
+      - PROTOTYPE_WORKSPACE_DIR=/app/workspace
+      - PROTOTYPE_SCREENSHOT_DIR=/app/uploads/prototypes
+      - DB_HOST=votekit-mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=vote_kit_prod
+      - REDIS_HOST=votekit-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - FORGE_ENGINE_URL=http://localhost:8080
+      - FORGE_EXPORT_URL=http://localhost:8081
+      - VOTE_KIT_BASE_URL=http://localhost:3000
+      - TZ=Asia/Shanghai
+      - AI_PROVIDER=deepseek
+      - DEEPSEEK_API_KEY=
+      - JENKINS_BASE_URL=http://jenkins:8080
+      - JENKINS_JOB_NAME=
+      - JENKINS_USER=
+      - JENKINS_API_TOKEN=
+      # Jenkins 构建结束时回调后端更新部署状态；须为 Jenkins 容器能访问的地址（同网络用服务名）
+      - JENKINS_CALLBACK_BASE_URL=http://votekit-backend:3000
+      # 内测：新用户注册赠送次数（0=不赠送）。Free 套餐基础上叠加：需求/原型 +N 次，代码生成 +N 次
+      - WELCOME_PROTO_BONUS=15
+      - WELCOME_CODE_BONUS=4
+      # 单次调用预估最低 Credits（用于 checkQuota 预校验）
+      - MIN_PROTO_CALL_CREDITS=1
+      - MIN_CODE_CALL_CREDITS=10
+      # 配置 SMTP 到 Mailpit
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
+      - SMTP_SECURE="false"
+      - SMTP_USER=""
+      - SMTP_PASS=""
+      - EMAIL_FROM="no-reply@votekit.local"
+    ports:
+      - "3000:3000"
+    volumes:
+      # 原型 HTML 版本化存储（无此卷则容器重建后原型文件丢失）
+      - ./data/workspace:/app/workspace
+      # 原型截图等上传文件（无此卷则截图丢失）
+      - ./backend/uploads:/app/uploads
+      - ./logs/backend:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - votekit-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端应用
+  votekit-frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:3000
+    container_name: votekit-frontend
+    restart: always
+    depends_on:
+      - votekit-backend
+    environment:
+      - TZ=Asia/Shanghai
+    # ports:  # 移除宿主机端口映射
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+      # 原型截图由前端 nginx 直接提供，便于同源访问；后期可改为 OSS
+      - ./backend/uploads/prototypes:/usr/share/nginx/html/uploads/prototypes:ro
+    networks:
+      - votekit-network
+    labels:
+      - "caddy=${DOMAIN}"  # 临时域名，上线后替换
+      - "caddy.reverse_proxy={{upstreams 80}}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    restart: always
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - /data/jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock      # 允许 Jenkins 操作宿主 Docker
+      - /usr/bin/docker:/usr/bin/docker
+      - /tmp:/tmp                                       # 共享应用代码目录
+    environment:
+      - TZ=Asia/Shanghai
+      - JENKINS_BASE_URL=http://jenkins:8080            # 后端触发 Jenkins 时使用的内部地址
+      - JENKINS_JOB_NAME=forge-generated-app-deploy      # 可自定义，与 Jenkinsfile 一致
+      # 如果你的 Jenkins 开启了安全认证，还需要设置以下变量（可选）
+      - JENKINS_USER=
+      - JENKINS_API_TOKEN=
+    networks:
+      - votekit-network
+
+  # Caddy 反向代理服务
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "2019:2019"
+    volumes:
+      - caddy_data:/data                    # 存储证书等
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    networks:
+      - votekit-network
+    environment:
+      - TZ=Asia/Shanghai
+    depends_on:
+      - votekit-frontend
+
+networks:
+  votekit-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:
+  caddy_data:

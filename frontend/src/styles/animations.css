@@ -1,0 +1,221 @@
+/* VoteKit Animations - Neumorphism Style */
+
+/* Keyframes - Spring Physics */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+/* Neumorphism Spring Animation */
+@keyframes neu-spring {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Neumorphism Press Animation */
+@keyframes neu-press {
+  0% {
+    box-shadow: var(--neu-shadow-outer-light),
+                var(--neu-shadow-outer-dark);
+    transform: translateY(0);
+  }
+  50% {
+    box-shadow: var(--neu-shadow-pressed);
+    transform: translateY(2px);
+  }
+  100% {
+    box-shadow: var(--neu-shadow-outer-light),
+                var(--neu-shadow-outer-dark);
+    transform: translateY(0);
+  }
+}
+
+/* Neumorphism Ripple Effect */
+@keyframes neu-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Neumorphism Glow Pulse */
+@keyframes neu-glow-pulse {
+  0%, 100% {
+    box-shadow: var(--neu-shadow-outer-light),
+                var(--neu-shadow-outer-dark);
+  }
+  50% {
+    box-shadow: var(--neu-shadow-outer-light),
+                var(--neu-shadow-outer-dark),
+                0 0 20px rgba(0, 122, 255, 0.3);
+  }
+}
+
+/* Neumorphism Depth Transition */
+@keyframes neu-depth-in {
+  from {
+    box-shadow: var(--neu-shadow-soft);
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    box-shadow: var(--neu-shadow-outer-light),
+                var(--neu-shadow-outer-dark);
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Legacy animations for compatibility */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 107, 53, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 107, 53, 0.4);
+  }
+}
+
+@keyframes vote-click {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Utility Classes */
+.animate-fade-in {
+  animation: fadeIn 0.5s var(--transition-base) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s var(--transition-base) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s var(--transition-base) forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Neumorphism Animations */
+.animate-neu-spring {
+  animation: neu-spring 0.4s var(--transition-spring);
+}
+
+.animate-neu-press {
+  animation: neu-press 0.3s var(--transition-fast);
+}
+
+.animate-neu-ripple {
+  animation: neu-ripple 0.6s ease-out;
+}
+
+.animate-neu-glow {
+  animation: neu-glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-neu-depth {
+  animation: neu-depth-in 0.5s var(--transition-base) forwards;
+}
+
+/* Card Hover Effect - Neumorphism */
+.card-hover {
+  transition: all var(--transition-base);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--neu-shadow-hover);
+}
+
+/* Button Hover Effect - Neumorphism */
+.btn-hover {
+  transition: all var(--transition-spring);
+}
+
+.btn-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--neu-shadow-hover);
+}
+
+.btn-hover:active {
+  transform: translateY(1px);
+  box-shadow: var(--neu-shadow-pressed);
+}
+
+/* Glass Effect */
+.glass-effect {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Stagger Animation */
+.stagger-item {
+  opacity: 0;
+  animation: slideUp 0.4s var(--transition-base) forwards;
+}
+
+.stagger-item:nth-child(1) { animation-delay: 0.1s; }
+.stagger-item:nth-child(2) { animation-delay: 0.2s; }
+.stagger-item:nth-child(3) { animation-delay: 0.3s; }
+.stagger-item:nth-child(4) { animation-delay: 0.4s; }
+.stagger-item:nth-child(5) { animation-delay: 0.5s; }
+.stagger-item:nth-child(6) { animation-delay: 0.6s; }

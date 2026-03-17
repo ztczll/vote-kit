@@ -1,0 +1,131 @@
+version: '3.2'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: vote-kit-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
+      MYSQL_DATABASE: vote_kit_prod
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - vote-kit-network
+
+  # Redis (Vote-Kit)
+  redis-vote:
+    image: redis:7-alpine
+    container_name: vote-kit-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - vote-kit-network
+
+  # Redis (Forge Engine)
+  redis-forge:
+    image: redis:7-alpine
+    container_name: forge-redis
+    command: redis-server --requirepass testpass
+    ports:
+      - "6380:6379"
+    networks:
+      - vote-kit-network
+
+  # Forge Engine
+  forge-engine:
+    build:
+      context: ./forge
+      dockerfile: Dockerfile.simple
+    container_name: forge-engine
+    environment:
+      - FORGE_REDIS_ADDR=redis-forge:6379
+      - FORGE_REDIS_PASSWORD=testpass
+      - FORGE_KIRO_BINARY_PATH=/usr/local/bin/kiro-cli
+      - FORGE_GIT_TOKEN=dummy-token
+    ports:
+      - "8080:8080"
+    volumes:
+      - forge_repos:/tmp/forge-repos
+    depends_on:
+      - redis-forge
+    networks:
+      - vote-kit-network
+
+  # Forge Export Server
+  forge-export:
+    build:
+      context: ./forge
+      dockerfile: Dockerfile.simple
+    container_name: forge-export
+    command: ["./export-server"]
+    ports:
+      - "8081:8081"
+    volumes:
+      - forge_repos:/tmp/forge-repos
+    depends_on:
+      - forge-engine
+    networks:
+      - vote-kit-network
+
+  # Vote-Kit Backend
+  vote-kit-backend:
+    build:
+      context: ./vote-kit/backend
+      dockerfile: Dockerfile
+    container_name: vote-kit-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD:-changeme}
+      - DB_NAME=vote_kit_prod
+      - REDIS_HOST=redis-vote
+      - REDIS_PORT=6379
+      - JWT_SECRET=your-production-jwt-secret
+      - VOTE_KIT_BASE_URL=http://vote-kit-backend:3000
+      - FORGE_REDIS_HOST=redis-forge
+      - FORGE_REDIS_PORT=6379
+      - FORGE_REDIS_PASSWORD=testpass
+      - FORGE_EXPORT_SERVICE_URL=http://forge-export:8081
+      - PROTOTYPE_WORKSPACE_DIR=/app/workspace
+      - PROTOTYPE_SCREENSHOT_DIR=/app/uploads/prototypes
+    ports:
+      - "3000:3000"
+    volumes:
+      - votekit-workspace:/app/workspace
+      - votekit-uploads:/app/uploads
+    depends_on:
+      - mysql
+      - redis-vote
+      - redis-forge
+      - forge-engine
+    networks:
+      - vote-kit-network
+
+  # Vote-Kit Frontend
+  vote-kit-frontend:
+    build:
+      context: ./vote-kit/frontend
+      dockerfile: Dockerfile
+    container_name: vote-kit-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - vote-kit-backend
+    networks:
+      - vote-kit-network
+
+volumes:
+  mysql_data:
+  forge_repos:
+  votekit-workspace:
+  votekit-uploads:
+
+networks:
+  vote-kit-network:
+    driver: bridge

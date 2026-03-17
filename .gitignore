@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables - NEVER commit real .env files
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+backend/dist/
+*.log
+
+# IDE
+CODEBUDDY.md
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.sql
+*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+.cache/
+*.bak
+
+# Docker volumes
+/data/
+
+# User uploads (runtime data, not source code)
+backend/uploads/prototypes/*.webp
+backend/uploads/pencil/*
+backend/uploads/contact/*
+backend/data/prototypes/*.html
+
+# Prototype workspace
+workspace/
+
+# Forge binary build outputs
+forge/forge
+forge/*.exe
