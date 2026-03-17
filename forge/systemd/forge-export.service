@@ -1,0 +1,28 @@
+[Unit]
+Description=Forge Export Service
+After=network.target
+PartOf=forge-engine.service
+
+[Service]
+Type=simple
+User=forge
+Group=forge
+WorkingDirectory=/usr/local/bin
+ExecStart=/usr/local/bin/export-server
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=FORGE_CONFIG_PATH=/etc/forge/config.yaml
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/forge
+
+[Install]
+WantedBy=multi-user.target

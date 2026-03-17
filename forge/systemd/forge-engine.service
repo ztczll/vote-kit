@@ -1,0 +1,21 @@
+[Unit]
+Description=Forge Engine Service
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/usr/local/bin
+ExecStart=/usr/local/bin/forge
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+Environment=FORGE_CONFIG_PATH=/usr/local/etc/forge/config.yaml
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,85 @@
+server:
+  host: "0.0.0.0"
+  port: 8085
+  shutdown_timeout: "30s"
+
+redis:
+  addr: "localhost:6379"
+  password: "12345678"
+  db: 1
+  queue_name: "forge_tasks"
+  max_retries: 3
+
+worker:
+  pool_size: 4
+  task_timeout: "30m"
+  retry_delay: "5s"
+  max_retry_delay: "5m"
+
+logging:
+  level: "info"
+  format: "json"
+
+ai:
+  # Engine selection: "kiro" or "cursor"
+  engine: "kiro"
+  
+  # Directory for storing exported zip packages (default: /tmp/forge-exports)
+  export_dir: "/tmp/forge-exports"
+  
+  # Kiro configuration (used when engine is "kiro")
+  kiro:
+    binary_path: "/usr/local/bin/kiro-cli"
+    max_retries: 3
+    timeout: "10m"
+    output_dir: "/tmp/forge-generated"
+  
+  # Cursor Cloud Agents configuration (used when engine is "cursor")
+  cursor:
+    # Cursor API key from https://cursor.com/settings
+    # Note: Cursor API uses Bearer Token authentication, not Basic Auth
+    api_key: ""
+    # API base URL (default: https://api.cursor.com)
+    api_base_url: "https://api.cursor.com"
+    # Model name (optional, leave empty for auto-selection)
+    model: ""
+    # Poll interval for checking agent status
+    poll_interval: "5s"
+    # Maximum wait time for agent to complete
+    max_wait_time: "30m"
+    # GitHub repository configuration
+    repository:
+      # Base repository URL (required if create_temp_repo is false)
+      # Format: https://github.com/{owner}/{repo}
+      # Note: Cursor accesses GitHub through your authorized GitHub account
+      # You don't need to provide GitHub token here - Cursor handles it
+      base_repository: ""
+      # GitHub organization name (used when create_temp_repo is true)
+      organization: ""
+      # Default branch name (main, master, etc.)
+      # If not set, will try to auto-detect from GitHub API
+      # Default: "main"
+      default_branch: "master"
+      # Whether to create temporary repositories for each generation
+      # If true: requires GitHub token in git section below
+      # If false: only needs base_repository URL (Cursor handles GitHub access)
+      create_temp_repo: true
+
+docker:
+  socket_path: "/var/run/docker.sock"
+  registry: ""
+  build_timeout: "20m"
+
+git:
+  base_dir: "/tmp/forge_repos"
+  cleanup_after: "24h"
+  # GitHub Personal Access Token (required if cursor.repository.create_temp_repo is true)
+  # Required permissions: repo (full control of private repositories)
+  # Get token from: https://github.com/settings/tokens
+  # Note: This is only needed for creating temporary repos and cloning branches
+  # Cursor API itself doesn't need this - it uses your authorized GitHub connection
+  token: ""
+  # GitHub username (required if cursor.repository.create_temp_repo is true)
+  username: ""
+  # GitHub organization (optional, for organization repositories)
+  organization: ""
