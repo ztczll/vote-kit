@@ -60,3 +60,4 @@ workspace/
 # Forge binary build outputs
 forge/forge
 forge/*.exe
+.kiro/
